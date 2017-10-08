@@ -1,7 +1,6 @@
 # $Id: Makefile,v 1.6 2015/08/24 22:00:00 Matlink Exp $
 #
 SHELL := /bin/bash
-PYTHON=$(shell which python2)
 GIT=$(shell which git)
 GPG=$(shell which gpg2)
 TWINE=$(shell which twine)
@@ -19,16 +18,19 @@ all:
 	@echo "make builddeb - Generate a deb package"
 	@echo "make clean - Get rid of scratch and byte files"
 
-source:
+python:
+	PYTHON=$(shell which python2)
+
+source: python
 	$(PYTHON) setup.py sdist $(COMPILE)
 
 sign:
 	$(GPG) --detach-sign --default-key $(GPGID) -a dist/GPlayCli-$(VERSION).tar.gz
 
-install:
+install: python
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
-deb:
+deb: python
 	$(PYTHON) setup.py --command-packages=stdeb.command sdist_dsc --sign-results bdist_deb
 
 publish: clean source sign
@@ -37,13 +39,13 @@ publish: clean source sign
 gitpush:
 	$(GIT) push origin master
 	$(GIT) push github master
-clean:
+clean: python
 	$(PYTHON) setup.py clean
 	rm -rf build/ MANIFEST dist GPlayCli.egg-info debian/{gplaycli,python-module-stampdir} debian/gplaycli.{debhelper.log,postinst.debhelper,prerm.debhelper,substvars} *.tar.gz* deb_dist
 	find . -name '*.pyc' -delete
 
 test:
-	$(PYTEST) tests/
+#$(PYTEST) tests/
 	rm -f ~/.cache/gplaycli/token
 	$(PROJECT) -vd $(TESTAPK)
 	[ -f $(TESTAPK).apk ]
